@@ -2,13 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
-/* App base styles (optional) */
+/* === Yarn App Brand Tokens (Client Branding) === */
 :root {
-  --app-bg: #ffffff;
+  --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
+  --font-display: "DM Serif Display", ui-serif, Georgia, "Times New Roman", Times, serif;
+
+  /* Brand colors */
+  --brand-primary: #1B365D;     /* Rich Navy */
+  --brand-bg: #F5F2ED;          /* Soft White */
+  --brand-text: #1B365D;        /* Rich Navy text */
+  --brand-accent: #C5B9A5;      /* Warm Stone */
+  --brand-accent-muted: #D4C8BE;/* Light Stone */
+  --brand-neutral: #8C857B;     /* Taupe Grey */
+  --brand-warm-grey: #B3A595;   /* Warm Grey */
+
+  /* Derived */
+  --brand-primary-700: #122541;
+  --brand-ring: #C5B9A5;
+  --card-ring: #D4C8BE;
 }
-html, body, #root {
-  height: 100%;
-}
+
+/* Base */
+html, body, #root { height: 100%; }
 body {
-  background: var(--app-bg);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--brand-bg);
+  color: var(--brand-text);
+}
+
+/* Wrap all @apply rules in the components layer */
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white shadow-sm ring-1;
+    border-color: var(--card-ring);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 font-medium transition-transform duration-150 ease-out;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-primary {
+    background: var(--brand-primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--brand-primary-700); }
+
+  .btn-outline {
+    background: #fff;
+    color: var(--brand-primary);
+    border: 1px solid var(--brand-accent);
+  }
+  .btn-outline:hover { background: var(--brand-accent-muted); }
+
+  .field {
+    @apply w-full rounded-2xl border px-3 py-2;
+    border-color: var(--brand-warm-grey);
+  }
+  .field:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--brand-ring);
+  }
+
+  .display-font { font-family: var(--font-display); }
+  .muted { color: var(--brand-neutral); }
+  .caption { @apply text-xs; color: var(--brand-neutral); }
+}
+
+/* Accessibility */
+:focus-visible {
+  outline: 2px solid var(--brand-ring);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .card, .field { transition: all 150ms ease-out; }
+}
+
+@layer components {
+  .surface-warm { background: var(--brand-accent-muted); } /* Light Stone #D4C8BE */
+  .surface-soft { background: var(--brand-bg); }           /* Soft White #F5F2ED */
+  .heading-navy { color: var(--brand-text); }              /* Rich Navy #1B365D */
 }
