@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App base styles (optional) */
+:root {
+  --app-bg: #ffffff;
+}
+html, body, #root {
+  height: 100%;
+}
+body {
+  background: var(--app-bg);
+}
