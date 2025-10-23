@@ -1,0 +1,20 @@
+// FINAL RULES — per-user ownership on "projects"
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /projects/{projectId} {
+      // Anyone signed in can read their own projects
+      allow read: if request.auth != null
+                  && request.auth.uid == resource.data.ownerId;
+
+      // Create allowed only if the new doc claims the current user as owner
+      allow create: if request.auth != null
+                    && request.resource.data.ownerId == request.auth.uid;
+
+      // Update/Delete only by the owner
+      allow update, delete: if request.auth != null
+                            && request.auth.uid == resource.data.ownerId;
+    }
+  }
+}
+

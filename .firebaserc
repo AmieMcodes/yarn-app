@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "yarn-app-41a96"
-  }
+    "default": "yarn-app-41a96",
+    "yarn app": "yarn-app-41a96"
+  },
+  "targets": {},
+  "etags": {}
 }
