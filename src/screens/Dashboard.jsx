@@ -75,10 +75,10 @@ export default function Dashboard() {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-white/70 border border-white/60 px-3 py-1 text-sm">
               <span className="h-2 w-2 rounded-full bg-brand-navy" />
-              <span className="text-brand-text/80">Yarn Over Needles</span>
+              <span className="text-brand-text/80">Yarn App</span>
             </span>
             <h1 className="mt-3 text-3xl md:text-4xl font-serif text-brand-navy">
-              Welcome to Yarn Over Needles
+              Welcome to Yarn App
             </h1>
             <p className="mt-1 text-brand-text/80">
               Track your yarn stash and projects — all in one place.

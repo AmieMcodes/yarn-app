@@ -1,8 +1,9 @@
+// src/screens/ProjectDetails.jsx
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { auth, db, storage } from "../utils/firebaseClient";
 import {
-  doc, getDoc, onSnapshot, updateDoc, serverTimestamp,
+  doc, onSnapshot, updateDoc, serverTimestamp,
 } from "firebase/firestore";
 import { ref, getDownloadURL, listAll } from "firebase/storage";
 import YourUploadComponent from "../components/YourUploadComponent";
@@ -16,12 +17,12 @@ export default function ProjectDetails() {
 
   const uid = auth.currentUser?.uid || null;
 
-  // redirect if not logged in
+  // Redirect if not logged in
   useEffect(() => {
     if (!uid) navigate("/login");
   }, [uid, navigate]);
 
-  // load project
+  // Load project live
   useEffect(() => {
     if (!uid || !id) return;
     const refDoc = doc(db, "projects", id);
@@ -36,7 +37,7 @@ export default function ProjectDetails() {
     return () => unsub();
   }, [uid, id]);
 
-  // list uploaded files
+  // List uploaded files under uploads/<uid>/<projectId>/*
   const uploadsPrefix = useMemo(() => `uploads/${uid}/${id}`, [uid, id]);
   useEffect(() => {
     if (!uid || !id) return;

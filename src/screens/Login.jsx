@@ -46,7 +46,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-brand-cream px-4">
       <div className="max-w-md w-full bg-white/70 rounded-2xl shadow p-8">
         <div className="text-center mb-6">
-          <span className="inline-block text-sm text-brand-navy font-medium">🧶 Yarn Over Needles</span>
+          <span className="inline-block text-sm text-brand-navy font-medium">🧶 Yarn App</span>
           <h1 className="text-2xl font-semibold text-brand-navy mt-2">
             {mode === "signin" ? "Welcome back!" : "Create your Yarn App account"}
           </h1>

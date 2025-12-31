@@ -1,5 +1,5 @@
 // src/screens/Projects.jsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   collection,
   addDoc,
@@ -7,215 +7,73 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  updateDoc,
   doc,
   deleteDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../utils/firebaseClient";
-
-function ProjectDetailsModal({ project, onClose, onSave, focusNotes }) {
-  const [notes, setNotes] = useState(project?.notes || "");
-  const [openingKey, setOpeningKey] = useState(null);
-  const notesRef = useRef(null);
-
-  useEffect(() => setNotes(project?.notes || ""), [project?.id]);
-
-  useEffect(() => {
-    if (focusNotes && notesRef.current) {
-      const el = notesRef.current;
-      el.focus();
-      const len = el.value.length;
-      el.setSelectionRange(len, len);
-    }
-  }, [focusNotes]);
-
-  if (!project) return null;
-
-  const openFile = async (fileLike, idx) => {
-    try {
-      setOpeningKey(idx);
-      let url = null;
-
-      if (typeof fileLike === "string") {
-        if (fileLike.startsWith("http")) url = fileLike;
-        else url = await getDownloadURL(ref(storage, fileLike));
-      } else if (typeof fileLike === "object") {
-        const direct = fileLike.url || fileLike.href;
-        if (direct && direct.startsWith("http")) url = direct;
-        else {
-          const path = fileLike.path || fileLike.storagePath;
-          if (path) url = await getDownloadURL(ref(storage, path));
-        }
-      }
-
-      if (!url) {
-        alert("Sorry, I couldn’t find the file URL.");
-        return;
-      }
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (err) {
-      console.error(err);
-      alert("Could not open that file. Please check permissions.");
-    } finally {
-      setOpeningKey(null);
-    }
-  };
-
-  const handleSave = async () => {
-    await onSave({ ...project, notes });
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{project.name || "Project"}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
-          >
-            Close
-          </button>
-        </header>
-
-        <div className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium">Notes</span>
-            <textarea
-              ref={notesRef}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={6}
-              className="mt-1 w-full rounded-xl border p-3 outline-none focus:ring-2"
-              placeholder="Add or update notes about this project..."
-            />
-          </label>
-
-          <div>
-            <h3 className="text-sm font-medium mb-2">Files</h3>
-            {Array.isArray(project.files) && project.files.length > 0 ? (
-              <div className="space-y-2">
-                {project.files.map((f, idx) => {
-                  const label =
-                    (typeof f === "object" && (f.name || f.filename)) ||
-                    (typeof f === "string" && f.split("/").pop()) ||
-                    `File ${idx + 1}`;
-                  return (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-lg border p-2"
-                    >
-                      <span className="truncate text-sm">{label}</span>
-                      <button
-                        onClick={() => openFile(f, idx)}
-                        className="rounded-xl border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
-                        disabled={openingKey === idx}
-                      >
-                        {openingKey === idx ? "Opening…" : "View PDF"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No files uploaded yet.</p>
-            )}
-          </div>
-        </div>
-
-        <footer className="mt-5 flex gap-2">
-          <button
-            onClick={handleSave}
-            className="rounded-xl bg-black px-4 py-2 text-white hover:opacity-90"
-          >
-            Save Notes
-          </button>
-          <button
-            onClick={onClose}
-            className="rounded-xl border px-4 py-2 hover:bg-gray-50"
-          >
-            Done
-          </button>
-        </footer>
-      </div>
-    </div>
-  );
-}
+import { ref, uploadBytes } from "firebase/storage";
+import { Link } from "react-router-dom";
+import { auth, db, storage } from "../utils/firebaseClient";
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [newProject, setNewProject] = useState({ name: "", notes: "" });
-  const [uploading, setUploading] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [focusNotes, setFocusNotes] = useState(false);
+  const [uploadingId, setUploadingId] = useState(null);
 
-  // Fetch all projects
+  const uid = auth.currentUser?.uid || null;
+
+  // Live list
   useEffect(() => {
     const q = query(collection(db, "projects"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
-      const list = [];
-      snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
-      setProjects(list);
+      const out = [];
+      snap.forEach((d) => out.push({ id: d.id, ...d.data() }));
+      setProjects(out);
     });
     return () => unsub();
   }, []);
 
-  const addProject = async () => {
+  async function addProject() {
     if (!newProject.name.trim()) return alert("Please enter a name.");
     await addDoc(collection(db, "projects"), {
       name: newProject.name.trim(),
       notes: newProject.notes.trim(),
+      status: "in progress",
       createdAt: serverTimestamp(),
-      files: [],
     });
     setNewProject({ name: "", notes: "" });
-  };
+  }
 
-  const deleteProject = async (id) => {
+  async function deleteProject(id) {
     if (!confirm("Delete this project?")) return;
     await deleteDoc(doc(db, "projects", id));
-  };
+  }
 
-  const uploadFile = async (id, file) => {
+  // IMPORTANT: store uploads under uploads/<uid>/<projectId>/ to match Details page
+  async function uploadFile(projectId, file) {
     if (!file) return;
-    setUploading(true);
+    if (!uid) {
+      alert("You must be logged in to upload.");
+      return;
+    }
+    setUploadingId(projectId);
     try {
-      const storagePath = `projects/${id}/${file.name}`;
+      const storagePath = `uploads/${uid}/${projectId}/${file.name}`;
       const fileRef = ref(storage, storagePath);
       await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      await updateDoc(doc(db, "projects", id), {
-        files: [
-          ...(projects.find((p) => p.id === id)?.files || []),
-          { name: file.name, path: storagePath, url },
-        ],
-      });
-    } catch (err) {
-      console.error(err);
+      // We don’t need to write to Firestore here; Details page lists from Storage.
+    } catch (e) {
+      console.error(e);
       alert("Upload failed.");
     } finally {
-      setUploading(false);
+      setUploadingId(null);
     }
-  };
-
-  const handleSaveNotes = async (updated) => {
-    const refDoc = doc(db, "projects", updated.id);
-    await updateDoc(refDoc, { notes: updated.notes || "" });
-    setSelected((prev) => (prev ? { ...prev, notes: updated.notes } : prev));
-  };
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-2">Projects</h1>
       <p className="text-sm text-gray-600 mb-6">
-        Use <span className="font-medium">Add more notes</span> anytime to update project info or files.
+        Create projects and upload PDFs or images. Open a project to add notes, status, and view files.
       </p>
 
       {/* Create Project */}
@@ -242,7 +100,7 @@ export default function Projects() {
         </button>
       </div>
 
-      {/* List Projects */}
+      {/* List */}
       <div className="grid gap-4 sm:grid-cols-2">
         {projects.map((p) => (
           <article key={p.id} className="rounded-2xl border bg-white p-4 shadow-sm">
@@ -250,33 +108,30 @@ export default function Projects() {
             {p.notes && <p className="text-sm text-gray-600 mt-1">{p.notes}</p>}
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                onClick={() => {
-                  setSelected(p);
-                  setFocusNotes(false);
-                }}
+              {/* View details (route) */}
+              <Link
+                to={`/projects/${p.id}`}
                 className="rounded-xl border px-3 py-1.5 text-sm hover:bg-gray-50"
               >
                 View details
-              </button>
+              </Link>
 
-              <button
-                onClick={() => {
-                  setSelected(p);
-                  setFocusNotes(true);
-                }}
+              {/* Add more notes = also route to details, lands at notes form */}
+              <Link
+                to={`/projects/${p.id}`}
                 className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm text-white hover:opacity-90"
               >
                 Add more notes
-              </button>
+              </Link>
 
+              {/* Upload file → saves to uploads/<uid>/<projectId>/* so Details will list it */}
               <label className="rounded-xl border px-3 py-1.5 text-sm hover:bg-gray-50 cursor-pointer">
-                {uploading ? "Uploading..." : "Upload file"}
+                {uploadingId === p.id ? "Uploading..." : "Upload file"}
                 <input
                   type="file"
                   className="hidden"
                   onChange={(e) => uploadFile(p.id, e.target.files[0])}
-                  disabled={uploading}
+                  disabled={uploadingId === p.id}
                 />
               </label>
 
@@ -290,13 +145,6 @@ export default function Projects() {
           </article>
         ))}
       </div>
-
-      <ProjectDetailsModal
-        project={selected}
-        onClose={() => setSelected(null)}
-        onSave={handleSaveNotes}
-        focusNotes={focusNotes}
-      />
     </div>
   );
 }

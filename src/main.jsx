@@ -16,7 +16,7 @@ import Dashboard from "./screens/Dashboard.jsx";
 import Admin from "./screens/AdminRoute.jsx";
 import AdminRoute from "./routes/AdminRoute.jsx";
 import AdminDashboard from "./screens/AdminDashboard.jsx";
-
+import ProjectDetails from "./screens/ProjectDetails.jsx";
 /** ---------- Small route guards ---------- */
 
 // Wait for auth; if no user → /login
@@ -89,6 +89,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/stash" element={<Stash />} />
+<Route path="/projects/:id" element={<ProjectDetails />} />
 
 <Route element={<AdminRoute />}>
   <Route path="/admin" element={<AdminDashboard />} />
